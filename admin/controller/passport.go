@@ -9,6 +9,7 @@ import (
     "github.com/deatil/lakego-doak/lakego/facade/config"
     "github.com/deatil/lakego-doak/lakego/facade/captcha"
     "github.com/deatil/lakego-doak/lakego/facade/cache"
+    "github.com/deatil/lakego-doak/lakego/facade/logger"
 
     "github.com/deatil/lakego-doak-admin/admin/model"
     "github.com/deatil/lakego-doak-admin/admin/support/jwt"
@@ -43,7 +44,7 @@ func (this *Passport) Captcha(ctx *router.Context) {
         this.Error(ctx, "error", code.StatusError)
     }
 
-    key := config.New("auth").GetString("Passport.HeaderCaptchaKey")
+    key := config.New("auth").GetString("passport.header-captcha-key")
 
     this.SetHeader(ctx, key, id)
     this.SuccessWithData(ctx, "获取成功", router.H{
@@ -79,7 +80,7 @@ func (this *Passport) Login(ctx *router.Context) {
     captchaCode := post["captcha"].(string)
 
     // 验证码检测
-    key := config.New("auth").GetString("Passport.HeaderCaptchaKey")
+    key := config.New("auth").GetString("passport.header-captcha-key")
     captchaId := ctx.GetHeader(key)
 
     ok := captcha.New().Verify(captchaId, captchaCode, true)
@@ -121,6 +122,8 @@ func (this *Passport) Login(ctx *router.Context) {
     // 授权 token
     accessToken, err := jwter.MakeAccessToken(tokenData)
     if err != nil {
+        logger.New().Error("[login]" + err.Error())
+
         this.Error(ctx, "授权token生成失败", code.LoginError)
         return
     }
@@ -128,6 +131,8 @@ func (this *Passport) Login(ctx *router.Context) {
     // 刷新 token
     refreshToken, err := jwter.MakeRefreshToken(tokenData)
     if err != nil {
+        logger.New().Error("[login]" + err.Error())
+
         this.Error(ctx, "刷新token生成失败", code.LoginError)
         return
     }
@@ -200,6 +205,8 @@ func (this *Passport) RefreshToken(ctx *router.Context) {
     // 授权 token
     accessToken, err := jwter.MakeAccessToken(tokenData)
     if err != nil {
+        logger.New().Error("[login]" + err.Error())
+
         this.Error(ctx, "生成 access_token 失败", code.JwtRefreshTokenFail)
         return
     }
