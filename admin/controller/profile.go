@@ -29,6 +29,7 @@ type Profile struct {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /profile [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.profile.index"}
 func (this *Profile) Index(ctx *router.Context) {
     adminInfo, ok := ctx.Get("admin")
     if !ok {
@@ -53,9 +54,10 @@ func (this *Profile) Index(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "修改信息成功", "data": ""}"
 // @Router /profile [put]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.profile.update"}
 func (this *Profile) Update(ctx *router.Context) {
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     // 检测
@@ -76,7 +78,7 @@ func (this *Profile) Update(ctx *router.Context) {
 
     err := model.NewAdmin().
         Where("id = ?", adminid).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "nickname": post["nickname"].(string),
             "email": post["email"].(string),
             "introduce": post["introduce"].(string),
@@ -103,9 +105,10 @@ func (this *Profile) Update(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "修改头像成功", "data": ""}"
 // @Router /profile/avatar [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.profile.avatar"}
 func (this *Profile) UpdateAvatar(ctx *router.Context) {
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     // 检测
@@ -126,7 +129,7 @@ func (this *Profile) UpdateAvatar(ctx *router.Context) {
 
     err := model.NewAdmin().
         Where("id = ?", adminid).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "avatar": post["avatar"].(string),
         }).
         Error
@@ -153,9 +156,10 @@ func (this *Profile) UpdateAvatar(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "密码修改成功", "data": ""}"
 // @Router /profile/password [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.profile.password"}
 func (this *Profile) UpdatePasssword(ctx *router.Context) {
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     // 检测
@@ -199,7 +203,7 @@ func (this *Profile) UpdatePasssword(ctx *router.Context) {
 
     err := model.NewAdmin().
         Where("id = ?", adminid).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "password": pass,
             "password_salt": encrypt,
         }).
@@ -215,15 +219,16 @@ func (this *Profile) UpdatePasssword(ctx *router.Context) {
     this.Success(ctx, "密码修改成功")
 }
 
-// 权限列表
-// @Summary 权限列表
-// @Description 权限列表
+// 个人权限列表
+// @Summary 个人权限列表
+// @Description 个人权限列表
 // @Tags 个人信息
 // @Accept application/json
 // @Produce application/json
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /profile/rules [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.profile.rules"}
 func (this *Profile) Rules(ctx *router.Context) {
     adminInfo, ok := ctx.Get("admin")
     if !ok {

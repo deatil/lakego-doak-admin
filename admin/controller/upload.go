@@ -34,6 +34,7 @@ type Upload struct {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "密码修改成功", "data": ""}"
 // @Router /upload/file [post]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.upload.file"}
 func (this *Upload) File(ctx *router.Context) {
     // 账号信息
     adminInfo, _ := ctx.Get("admin")
@@ -92,7 +93,7 @@ func (this *Upload) File(ctx *router.Context) {
     adminModel := model.NewAdmin()
     attachmentModel := model.NewAttachment()
 
-    attach := map[string]interface{}{}
+    attach := map[string]any{}
     attachErr := attachmentModel.
         Where("md5 = ?", md5).
         First(&attach).
@@ -100,7 +101,7 @@ func (this *Upload) File(ctx *router.Context) {
     if attachErr == nil && len(attach) > 0 {
         attachUpdateErr := attachmentModel.
             Where("md5 = ?", md5).
-            Updates(map[string]interface{}{
+            Updates(map[string]any{
                 "update_time": datebin.NowTime(),
             }).
             Error

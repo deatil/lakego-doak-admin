@@ -4,9 +4,9 @@ import (
     "strings"
 
     "github.com/deatil/go-goch/goch"
+    "github.com/deatil/go-tree/tree"
     "github.com/deatil/go-datebin/datebin"
 
-    "github.com/deatil/lakego-doak/lakego/tree"
     "github.com/deatil/lakego-doak/lakego/router"
 
     "github.com/deatil/lakego-doak-admin/admin/model"
@@ -41,6 +41,7 @@ type AuthRule struct {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /auth/rule [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-rule.index"}
 func (this *AuthRule) Index(ctx *router.Context) {
     // 模型
     ruleModel := model.NewAuthRule()
@@ -53,6 +54,7 @@ func (this *AuthRule) Index(ctx *router.Context) {
         orders[0] != "title" &&
         orders[0] != "url" &&
         orders[0] != "method" &&
+        orders[0] != "listorder" &&
         orders[0] != "add_time") {
         orders[0] = "add_time"
     }
@@ -100,7 +102,7 @@ func (this *AuthRule) Index(ctx *router.Context) {
         Offset(newStart).
         Limit(newLimit)
 
-    list := make([]map[string]interface{}, 0)
+    list := make([]map[string]any, 0)
 
     // 列表
     ruleModel = ruleModel.Find(&list)
@@ -135,8 +137,9 @@ func (this *AuthRule) Index(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /auth/rule/tree [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-rule.tree"}
 func (this *AuthRule) IndexTree(ctx *router.Context) {
-    list := make([]map[string]interface{}, 0)
+    list := make([]map[string]any, 0)
 
     err := model.NewAuthRule().
         Order("listorder ASC").
@@ -167,6 +170,7 @@ func (this *AuthRule) IndexTree(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /auth/rule/children [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-rule.children"}
 func (this *AuthRule) IndexChildren(ctx *router.Context) {
     id := ctx.Query("id")
     if id == "" {
@@ -174,7 +178,7 @@ func (this *AuthRule) IndexChildren(ctx *router.Context) {
         return
     }
 
-    var data interface{}
+    var data any
 
     typ := ctx.Query("type")
     if typ == "list" {
@@ -198,6 +202,7 @@ func (this *AuthRule) IndexChildren(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /auth/rule/{id} [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-rule.detail"}
 func (this *AuthRule) Detail(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -240,9 +245,10 @@ func (this *AuthRule) Detail(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "信息添加成功", "data": ""}"
 // @Router /auth/rule [post]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-rule.create"}
 func (this *AuthRule) Create(ctx *router.Context) {
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     validateErr := authRuleValidate.Create(post)
@@ -312,6 +318,7 @@ func (this *AuthRule) Create(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "信息修改成功", "data": ""}"
 // @Router /auth/rule/{id} [put]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-rule.update"}
 func (this *AuthRule) Update(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -320,7 +327,7 @@ func (this *AuthRule) Update(ctx *router.Context) {
     }
 
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAuthRule().
         Where("id = ?", id).
         First(&result).
@@ -331,7 +338,7 @@ func (this *AuthRule) Update(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     validateErr := authRuleValidate.Update(post)
@@ -354,7 +361,7 @@ func (this *AuthRule) Update(ctx *router.Context) {
 
     err3 := model.NewAuthRule().
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "parentid": post["parentid"].(string),
             "title": post["title"].(string),
             "url": post["url"].(string),
@@ -363,8 +370,8 @@ func (this *AuthRule) Update(ctx *router.Context) {
             "description": post["description"].(string),
             "listorder": listorder,
             "status": status,
-            "add_time": int(datebin.NowTime()),
-            "add_ip": router.GetRequestIp(ctx),
+            "update_time": int(datebin.NowTime()),
+            "update_ip": router.GetRequestIp(ctx),
         }).
         Error
     if err3 != nil {
@@ -385,6 +392,7 @@ func (this *AuthRule) Update(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "信息删除成功", "data": ""}"
 // @Router /auth/rule/{id} [delete]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-rule.delete"}
 func (this *AuthRule) Delete(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -439,6 +447,7 @@ func (this *AuthRule) Delete(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "更新排序成功", "data": ""}"
 // @Router /auth/rule/{id}/sort [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-rule.sort"}
 func (this *AuthRule) Listorder(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -447,7 +456,7 @@ func (this *AuthRule) Listorder(ctx *router.Context) {
     }
 
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAuthRule().
         Where("id = ?", id).
         First(&result).
@@ -458,7 +467,7 @@ func (this *AuthRule) Listorder(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     // 排序
@@ -471,7 +480,7 @@ func (this *AuthRule) Listorder(ctx *router.Context) {
 
     err2 := model.NewAuthRule().
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "listorder": listorder,
         }).
         Error
@@ -493,6 +502,7 @@ func (this *AuthRule) Listorder(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "启用成功", "data": ""}"
 // @Router /auth/rule/{id}/enable [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-rule.enable"}
 func (this *AuthRule) Enable(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -501,7 +511,7 @@ func (this *AuthRule) Enable(ctx *router.Context) {
     }
 
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAuthRule().
         Where("id = ?", id).
         First(&result).
@@ -512,7 +522,7 @@ func (this *AuthRule) Enable(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     if result["status"] == 1 {
@@ -522,7 +532,7 @@ func (this *AuthRule) Enable(ctx *router.Context) {
 
     err2 := model.NewAuthRule().
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "status": 1,
         }).
         Error
@@ -544,6 +554,7 @@ func (this *AuthRule) Enable(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "禁用成功", "data": ""}"
 // @Router /auth/rule/{id}/disable [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-rule.disable"}
 func (this *AuthRule) Disable(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -552,7 +563,7 @@ func (this *AuthRule) Disable(ctx *router.Context) {
     }
 
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAuthRule().
         Where("id = ?", id).
         First(&result).
@@ -563,7 +574,7 @@ func (this *AuthRule) Disable(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     if result["status"] == 0 {
@@ -573,7 +584,7 @@ func (this *AuthRule) Disable(ctx *router.Context) {
 
     err2 := model.NewAuthRule().
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "status": 0,
         }).
         Error
@@ -595,9 +606,10 @@ func (this *AuthRule) Disable(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "删除特定权限成功", "data": ""}"
 // @Router /auth/rule/clear [delete]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-rule.clear"}
 func (this *AuthRule) Clear(ctx *router.Context) {
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     if post["ids"] == "" {

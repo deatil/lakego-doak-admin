@@ -37,6 +37,7 @@ type Passport struct {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Header 200 {string} string "Lakego-Admin-Captcha-Id"
 // @Router /passport/captcha [get]
+// @x-lakego {"slug": "lakego-admin.passport.captcha"}
 func (this *Passport) Captcha(ctx *router.Context) {
     c := captcha.New()
     id, b64s, err := c.Make()
@@ -64,9 +65,10 @@ func (this *Passport) Captcha(ctx *router.Context) {
 // @Param captcha formData string true "验证码"
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "登录成功", "data": ""}"
 // @Router /passport/login [post]
+// @x-lakego {"slug": "lakego-admin.passport.login"}
 func (this *Passport) Login(ctx *router.Context) {
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     validateErr := passportValidate.Login(post)
@@ -90,7 +92,7 @@ func (this *Passport) Login(ctx *router.Context) {
     }
 
     // 用户信息
-    admin := map[string]interface{}{}
+    admin := map[string]any{}
     err := model.NewAdmin().
         Where(&model.Admin{Name: name}).
         First(&admin).
@@ -143,7 +145,7 @@ func (this *Passport) Login(ctx *router.Context) {
     // 更新登录时间
     model.NewAdmin().
         Where("id = ?", adminid).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "last_active": int(datebin.NowTime()),
             "last_ip": router.GetRequestIp(ctx),
         })
@@ -165,12 +167,13 @@ func (this *Passport) Login(ctx *router.Context) {
 // @Param refresh_token formData string true "刷新 Token"
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /passport/refresh-token [post]
+// @x-lakego {"slug": "lakego-admin.passport.refresh-token"}
 func (this *Passport) RefreshToken(ctx *router.Context) {
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
-    var refreshToken interface{}
+    var refreshToken any
     var ok bool
 
     if refreshToken, ok = post["refresh_token"]; !ok {
@@ -232,12 +235,13 @@ func (this *Passport) RefreshToken(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /passport/logout [delete]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.passport.logout"}
 func (this *Passport) Logout(ctx *router.Context) {
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
-    var refreshToken interface{}
+    var refreshToken any
     var ok bool
 
     if refreshToken, ok = post["refresh_token"]; !ok {

@@ -4,10 +4,14 @@ import (
     "fmt"
     "strings"
 
+    "github.com/deatil/go-hash/hash"
     "github.com/deatil/go-datebin/datebin"
     "github.com/deatil/go-encoding/encoding"
+
+    "github.com/deatil/lakego-doak/lakego/random"
     "github.com/deatil/lakego-filesystem/filesystem"
 
+    "github.com/deatil/lakego-doak/lakego/array"
     "github.com/deatil/lakego-doak/lakego/command"
 
     "github.com/deatil/lakego-doak-admin/admin/model"
@@ -48,7 +52,7 @@ func ImportApiRoute() {
         return
     }
 
-    var routes map[string]interface{}
+    var routes map[string]any
 
     // 转换为 map
     err = encoding.Unmarshal([]byte(swaggerInfo), &routes)
@@ -62,18 +66,26 @@ func ImportApiRoute() {
         return
     }
 
-    paths := routes["paths"].(map[string]interface{})
+    paths := routes["paths"].(map[string]any)
 
     for k, v := range paths {
-        result := map[string]interface{}{}
+        result := map[string]any{}
 
-        paths2 := v.(map[string]interface{})
+        paths2 := v.(map[string]any)
         for kk, vv := range paths2 {
             url := k
             method := strings.ToUpper(kk)
 
-            data := vv.(map[string]interface{})
+            data := vv.(map[string]any)
             title := data["summary"].(string)
+
+            slug := array.ArrGetWithGoch(data, "x-lakego.slug").ToString()
+            if slug == "" {
+                slug = hash.MD5(datebin.NowDatetimeString() + random.String(15))
+            }
+
+            // 排序
+            sort := array.ArrGetWithGoch(data, "x-lakego.sort", "100").ToString()
 
             err := model.NewAuthRule().
                 Where("url = ?", url).
@@ -81,14 +93,53 @@ func ImportApiRoute() {
                 First(&result).
                 Error
             if err != nil || len(result) < 1 {
+                tags := array.ArrGetWithGoch(data, "tags").ToStringSlice()
+
+                tag := ""
+                if len(tags) > 0 {
+                    tag = tags[0]
+                }
+
+                parentid := "0"
+                if tag != "" {
+                    result2 := map[string]any{}
+                    err = model.NewAuthRule().
+                        Where("title = ?", tag).
+                        Where("method = ?", "OPTIONS").
+                        First(&result2).
+                        Error
+                    if err != nil || len(result2) < 1 {
+                        insertDataP := model.AuthRule{
+                            Parentid: "0",
+                            Title: tag,
+                            Url: "#",
+                            Method: "OPTIONS",
+                            Slug: "#",
+                            Description: "",
+                            Listorder: "100",
+                            Status: 1,
+                            AddTime: int(datebin.NowTime()),
+                            AddIp: "127.0.0.1",
+                        }
+
+                        errP := model.NewDB().Create(&insertDataP).Error
+                        if errP == nil {
+                            parentid = insertDataP.ID
+                        }
+
+                    } else {
+                        parentid = result2["id"].(string)
+                    }
+                }
+
                 insertData := model.AuthRule{
-                    Parentid: "0",
+                    Parentid: parentid,
                     Title: title,
                     Url: url,
                     Method: method,
-                    Slug: url,
+                    Slug: slug,
                     Description: "",
-                    Listorder: "100",
+                    Listorder: sort,
                     Status: 1,
                     AddTime: int(datebin.NowTime()),
                     AddIp: "127.0.0.1",
@@ -99,9 +150,10 @@ func ImportApiRoute() {
                 model.NewAuthRule().
                     Where("url = ?", url).
                     Where("method = ?", method).
-                    Updates(map[string]interface{}{
-                        "url": url,
-                        "method": method,
+                    Updates(map[string]any{
+                        "title": title,
+                        "slug": slug,
+                        "listorder": sort,
                     })
             }
 

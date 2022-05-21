@@ -4,9 +4,9 @@ import (
     "strings"
 
     "github.com/deatil/go-goch/goch"
+    "github.com/deatil/go-tree/tree"
     "github.com/deatil/go-datebin/datebin"
 
-    "github.com/deatil/lakego-doak/lakego/tree"
     "github.com/deatil/lakego-doak/lakego/router"
     "github.com/deatil/lakego-doak/lakego/collection"
 
@@ -41,6 +41,7 @@ type AuthGroup struct {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /auth/group [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-group.index"}
 func (this *AuthGroup) Index(ctx *router.Context) {
     // 模型
     groupModel := model.NewAuthGroup()
@@ -51,6 +52,7 @@ func (this *AuthGroup) Index(ctx *router.Context) {
     if orders[0] == "" ||
         (orders[0] != "id" &&
         orders[0] != "title" &&
+        orders[0] != "listorder" &&
         orders[0] != "add_time") {
         orders[0] = "add_time"
     }
@@ -93,7 +95,7 @@ func (this *AuthGroup) Index(ctx *router.Context) {
         Offset(newStart).
         Limit(newLimit)
 
-    list := make([]map[string]interface{}, 0)
+    list := make([]map[string]any, 0)
 
     // 列表
     groupModel = groupModel.Find(&list)
@@ -128,8 +130,9 @@ func (this *AuthGroup) Index(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /auth/group/tree [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-group.tree"}
 func (this *AuthGroup) IndexTree(ctx *router.Context) {
-    list := make([]map[string]interface{}, 0)
+    list := make([]map[string]any, 0)
 
     err := model.NewAuthGroup().
         Order("listorder ASC").
@@ -160,6 +163,7 @@ func (this *AuthGroup) IndexTree(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /auth/group/children [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-group.children"}
 func (this *AuthGroup) IndexChildren(ctx *router.Context) {
     id := ctx.Query("id")
     if id == "" {
@@ -167,7 +171,7 @@ func (this *AuthGroup) IndexChildren(ctx *router.Context) {
         return
     }
 
-    var data interface{}
+    var data any
 
     typ := ctx.Query("type")
     if typ == "list" {
@@ -191,6 +195,7 @@ func (this *AuthGroup) IndexChildren(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /auth/group/{id} [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-group.detail"}
 func (this *AuthGroup) Detail(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -215,7 +220,7 @@ func (this *AuthGroup) Detail(ctx *router.Context) {
     groupData := model.FormatStructToMap(&info)
 
     ruleAccesses := make([]string, 0)
-    if len(groupData["RuleAccesses"].([]interface{})) > 0 {
+    if len(groupData["RuleAccesses"].([]any)) > 0 {
         ruleAccesses = collection.
             Collect(groupData["RuleAccesses"]).
             Pluck("rule_id").
@@ -260,9 +265,10 @@ func (this *AuthGroup) Detail(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "信息添加成功", "data": ""}"
 // @Router /auth/group [post]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-group.create"}
 func (this *AuthGroup) Create(ctx *router.Context) {
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     validateErr := authGroupValidate.Create(post)
@@ -318,6 +324,7 @@ func (this *AuthGroup) Create(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "信息修改成功", "data": ""}"
 // @Router /auth/group/{id} [put]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-group.update"}
 func (this *AuthGroup) Update(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -326,7 +333,7 @@ func (this *AuthGroup) Update(ctx *router.Context) {
     }
 
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAuthGroup().
         Where("id = ?", id).
         First(&result).
@@ -337,7 +344,7 @@ func (this *AuthGroup) Update(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     validateErr := authGroupValidate.Update(post)
@@ -357,14 +364,14 @@ func (this *AuthGroup) Update(ctx *router.Context) {
 
     err3 := model.NewAuthGroup().
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "parentid": post["parentid"].(string),
             "title": post["title"].(string),
             "description": post["description"].(string),
             "listorder": listorder,
             "status": status,
-            "add_time": int(datebin.NowTime()),
-            "add_ip": router.GetRequestIp(ctx),
+            "update_time": int(datebin.NowTime()),
+            "update_ip": router.GetRequestIp(ctx),
         }).
         Error
     if err3 != nil {
@@ -385,6 +392,7 @@ func (this *AuthGroup) Update(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "信息删除成功", "data": ""}"
 // @Router /auth/group/{id} [delete]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-group.delete"}
 func (this *AuthGroup) Delete(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -439,6 +447,7 @@ func (this *AuthGroup) Delete(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "更新排序成功", "data": ""}"
 // @Router /auth/group/{id}/sort [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-group.sort"}
 func (this *AuthGroup) Listorder(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -447,7 +456,7 @@ func (this *AuthGroup) Listorder(ctx *router.Context) {
     }
 
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAuthGroup().
         Where("id = ?", id).
         First(&result).
@@ -458,7 +467,7 @@ func (this *AuthGroup) Listorder(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     // 排序
@@ -471,7 +480,7 @@ func (this *AuthGroup) Listorder(ctx *router.Context) {
 
     err2 := model.NewAuthGroup().
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "listorder": listorder,
         }).
         Error
@@ -493,6 +502,7 @@ func (this *AuthGroup) Listorder(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "启用成功", "data": ""}"
 // @Router /auth/group/{id}/enable [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-group.enable"}
 func (this *AuthGroup) Enable(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -501,7 +511,7 @@ func (this *AuthGroup) Enable(ctx *router.Context) {
     }
 
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAuthGroup().
         Where("id = ?", id).
         First(&result).
@@ -512,7 +522,7 @@ func (this *AuthGroup) Enable(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     if result["status"] == 1 {
@@ -522,7 +532,7 @@ func (this *AuthGroup) Enable(ctx *router.Context) {
 
     err2 := model.NewAuthGroup().
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "status": 1,
         }).
         Error
@@ -544,6 +554,7 @@ func (this *AuthGroup) Enable(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "禁用成功", "data": ""}"
 // @Router /auth/group/{id}/disable [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-group.disable"}
 func (this *AuthGroup) Disable(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -552,7 +563,7 @@ func (this *AuthGroup) Disable(ctx *router.Context) {
     }
 
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAuthGroup().
         Where("id = ?", id).
         First(&result).
@@ -563,7 +574,7 @@ func (this *AuthGroup) Disable(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     if result["status"] == 0 {
@@ -573,7 +584,7 @@ func (this *AuthGroup) Disable(ctx *router.Context) {
 
     err2 := model.NewAuthGroup().
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "status": 0,
         }).
         Error
@@ -596,6 +607,7 @@ func (this *AuthGroup) Disable(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "授权成功", "data": ""}"
 // @Router /auth/group/{id}/access [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.auth-group.access"}
 func (this *AuthGroup) Access(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -604,7 +616,7 @@ func (this *AuthGroup) Access(ctx *router.Context) {
     }
 
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAuthGroup().
         Where("id = ?", id).
         First(&result).
@@ -625,7 +637,7 @@ func (this *AuthGroup) Access(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     // 添加权限
@@ -640,6 +652,10 @@ func (this *AuthGroup) Access(ctx *router.Context) {
 
         insertData := make([]model.AuthRuleAccess, 0)
         for _, value := range newAccessIds {
+            if value == "" {
+                continue
+            }
+
             insertData = append(insertData, model.AuthRuleAccess{
                 GroupId: id,
                 RuleId: value,

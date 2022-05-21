@@ -6,9 +6,9 @@ import (
 
     "github.com/deatil/go-goch/goch"
     "github.com/deatil/go-hash/hash"
+    "github.com/deatil/go-tree/tree"
     "github.com/deatil/go-datebin/datebin"
 
-    "github.com/deatil/lakego-doak/lakego/tree"
     "github.com/deatil/lakego-doak/lakego/router"
     "github.com/deatil/lakego-doak/lakego/collection"
     "github.com/deatil/lakego-doak/lakego/facade/auth"
@@ -35,9 +35,9 @@ type Admin struct {
     Base
 }
 
-// 管理员列表
-// @Summary 管理员列表
-// @Description 管理员列表
+// 账号列表
+// @Summary 账号列表
+// @Description 管理员账号列表
 // @Tags 管理员
 // @Accept application/json
 // @Produce application/json
@@ -51,10 +51,14 @@ type Admin struct {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /admin [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.index"}
 func (this *Admin) Index(ctx *router.Context) {
+    // 授权数据
+    gadb := model.NewAuthGroupAccess()
+
     // 模型
     adminModel := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx))
+        Scopes(scope.AdminWithAccess(ctx, gadb))
 
     // 排序
     order := ctx.DefaultQuery("order", "add_time__ASC")
@@ -109,7 +113,7 @@ func (this *Admin) Index(ctx *router.Context) {
         Offset(newStart).
         Limit(newLimit)
 
-    list := make([]map[string]interface{}, 0)
+    list := make([]map[string]any, 0)
 
     // 列表
     adminModel = adminModel.
@@ -136,7 +140,7 @@ func (this *Admin) Index(ctx *router.Context) {
         return
     }
 
-    newlist := make([]map[string]interface{}, 0)
+    newlist := make([]map[string]any, 0)
     for _, item := range list {
         item["avatar_url"] = model.AttachmentUrl(item["avatar"].(string))
         newlist = append(newlist, item)
@@ -150,9 +154,9 @@ func (this *Admin) Index(ctx *router.Context) {
     })
 }
 
-// 管理员详情
-// @Summary 管理员详情
-// @Description 管理员详情
+// 账号详情
+// @Summary 账号详情
+// @Description 管理员账号详情
 // @Tags 管理员
 // @Accept application/json
 // @Produce application/json
@@ -160,6 +164,7 @@ func (this *Admin) Index(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /admin/{id} [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.detail"}
 func (this *Admin) Detail(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -169,9 +174,12 @@ func (this *Admin) Detail(ctx *router.Context) {
 
     var info = model.Admin{}
 
+    // 授权数据
+    gadb := model.NewAuthGroupAccess()
+
     // 模型
     err := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
         Preload("Groups").
         First(&info).
@@ -183,12 +191,12 @@ func (this *Admin) Detail(ctx *router.Context) {
 
     // 结构体转map
     data, _ := json.Marshal(&info)
-    adminData := map[string]interface{}{}
+    adminData := map[string]any{}
     json.Unmarshal(data, &adminData)
 
-    newInfoGroups := make([]map[string]interface{}, 0)
-    if len(adminData["Groups"].([]interface{})) > 0 {
-        newInfoGroups = collection.Collect(adminData["Groups"].([]interface{})).
+    newInfoGroups := make([]map[string]any, 0)
+    if len(adminData["Groups"].([]any)) > 0 {
+        newInfoGroups = collection.Collect(adminData["Groups"].([]any)).
             Select("id", "parentid", "title", "description").
             ToMapArray()
     }
@@ -211,9 +219,9 @@ func (this *Admin) Detail(ctx *router.Context) {
     this.SuccessWithData(ctx, "获取成功", newInfo)
 }
 
-// 管理员权限
-// @Summary 管理员权限
-// @Description 管理员权限
+// 账号权限
+// @Summary 账号权限
+// @Description 账号权限
 // @Tags 管理员
 // @Accept application/json
 // @Produce application/json
@@ -221,6 +229,7 @@ func (this *Admin) Detail(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /admin/{id}/rules [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.rules"}
 func (this *Admin) Rules(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -230,9 +239,12 @@ func (this *Admin) Rules(ctx *router.Context) {
 
     var info = model.Admin{}
 
+    // 授权数据
+    gadb := model.NewAuthGroupAccess()
+
     // 模型
     err := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
         Preload("Groups").
         First(&info).
@@ -244,7 +256,7 @@ func (this *Admin) Rules(ctx *router.Context) {
 
     // 结构体转map
     data, _ := json.Marshal(&info)
-    adminData := map[string]interface{}{}
+    adminData := map[string]any{}
     json.Unmarshal(data, &adminData)
 
     groupids := collection.Collect(adminData["Groups"]).
@@ -267,11 +279,12 @@ func (this *Admin) Rules(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /admin/groups [get]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.groups"}
 func (this *Admin) Groups(ctx *router.Context) {
     adminInfo, _ := ctx.Get("admin")
     adminData := adminInfo.(*admin.Admin)
 
-    list := make([]map[string]interface{}, 0)
+    list := make([]map[string]any, 0)
     if adminData.IsSuperAdministrator() {
         err := model.NewAuthGroup().
             Order("listorder ASC").
@@ -291,9 +304,9 @@ func (this *Admin) Groups(ctx *router.Context) {
 
         list = collection.
             Collect(list).
-            Each(func(item, value interface{}) (interface{}, bool) {
-                value2 := value.(map[string]interface{})
-                group := map[string]interface{}{
+            Each(func(item, value any) (any, bool) {
+                value2 := value.(map[string]any)
+                group := map[string]any{
                     "id": value2["id"],
                     "parentid": goch.ToString(value2["parentid"]),
                     "title": value2["title"],
@@ -317,9 +330,9 @@ func (this *Admin) Groups(ctx *router.Context) {
     })
 }
 
-// 管理员添加
-// @Summary 管理员添加
-// @Description 管理员添加
+// 添加账号
+// @Summary 添加账号
+// @Description 添加账号
 // @Tags 管理员
 // @Accept application/json
 // @Produce application/json
@@ -331,9 +344,10 @@ func (this *Admin) Groups(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /admin [post]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.create"}
 func (this *Admin) Create(ctx *router.Context) {
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     validateErr := adminValidate.Create(post)
@@ -348,7 +362,7 @@ func (this *Admin) Create(ctx *router.Context) {
     }
 
     // 模型
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAdmin().
         Where("name = ?", post["name"].(string)).
         Or("email = ?", post["email"].(string)).
@@ -387,8 +401,8 @@ func (this *Admin) Create(ctx *router.Context) {
     })
 }
 
-// 管理员更新
-// @Summary 管理员更新
+// 更新账号
+// @Summary 更新账号
 // @Description 管理员更新信息
 // @Tags 管理员
 // @Accept application/json
@@ -402,6 +416,7 @@ func (this *Admin) Create(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /admin/{id} [put]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.update"}
 func (this *Admin) Update(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -415,10 +430,13 @@ func (this *Admin) Update(ctx *router.Context) {
         return
     }
 
+    // 授权数据
+    gadb := model.NewAuthGroupAccess()
+
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
         First(&result).
         Error
@@ -428,7 +446,7 @@ func (this *Admin) Update(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     validateErr := adminValidate.Update(post)
@@ -446,7 +464,7 @@ func (this *Admin) Update(ctx *router.Context) {
     db := model.NewDB()
 
     // 验证
-    result2 := map[string]interface{}{}
+    result2 := map[string]any{}
     err2 := model.NewAdmin().
         Where(db.Where("id != ?", id).Where("name = ?", post["name"].(string))).
         Or(db.Where("id != ?", id).Where("email = ?", post["email"].(string))).
@@ -458,14 +476,16 @@ func (this *Admin) Update(ctx *router.Context) {
     }
 
     err3 := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "name": post["name"].(string),
             "nickname": post["nickname"].(string),
             "email": post["email"].(string),
             "introduce": post["introduce"].(string),
             "status": status,
+            "update_time": int(datebin.NowTime()),
+            "update_ip": router.GetRequestIp(ctx),
         }).
         Error
     if err3 != nil {
@@ -476,8 +496,8 @@ func (this *Admin) Update(ctx *router.Context) {
     this.Success(ctx, "账号修改成功")
 }
 
-// 管理员删除
-// @Summary 管理员删除
+// 删除账号
+// @Summary 删除账号
 // @Description 管理员账号删除
 // @Tags 管理员
 // @Accept application/json
@@ -486,6 +506,7 @@ func (this *Admin) Update(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "获取成功", "data": ""}"
 // @Router /admin/{id} [delete]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.delete"}
 func (this *Admin) Delete(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -499,11 +520,14 @@ func (this *Admin) Delete(ctx *router.Context) {
         return
     }
 
-    result := map[string]interface{}{}
+    result := map[string]any{}
+
+    // 授权数据
+    gadb := model.NewAuthGroupAccess()
 
     // 模型
     err := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
         First(&result).
         Error
@@ -520,7 +544,7 @@ func (this *Admin) Delete(ctx *router.Context) {
 
     // 删除
     err2 := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Delete(&model.Admin{
             ID: id,
         }).
@@ -533,8 +557,8 @@ func (this *Admin) Delete(ctx *router.Context) {
     this.Success(ctx, "账号删除成功")
 }
 
-// 修改头像
-// @Summary 修改头像
+// 修改账号头像
+// @Summary 修改账号头像
 // @Description 修改管理员账号头像
 // @Tags 管理员
 // @Accept application/json
@@ -544,6 +568,7 @@ func (this *Admin) Delete(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "...", "data": ""}"
 // @Router /admin/{id}/avatar [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.avatar"}
 func (this *Admin) UpdateAvatar(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -557,10 +582,13 @@ func (this *Admin) UpdateAvatar(ctx *router.Context) {
         return
     }
 
+    // 授权数据
+    gadb := model.NewAuthGroupAccess()
+
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
         First(&result).
         Error
@@ -570,7 +598,7 @@ func (this *Admin) UpdateAvatar(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     validateErr := adminValidate.UpdateAvatar(post)
@@ -580,9 +608,9 @@ func (this *Admin) UpdateAvatar(ctx *router.Context) {
     }
 
     err3 := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "avatar": post["avatar"].(string),
         }).
         Error
@@ -594,8 +622,8 @@ func (this *Admin) UpdateAvatar(ctx *router.Context) {
     this.Success(ctx, "修改头像成功")
 }
 
-// 修改密码
-// @Summary 修改密码
+// 修改账号密码
+// @Summary 修改账号密码
 // @Description 修改管理员账号密码
 // @Tags 管理员
 // @Accept application/json
@@ -605,6 +633,7 @@ func (this *Admin) UpdateAvatar(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "...", "data": ""}"
 // @Router /admin/{id}/password [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.password"}
 func (this *Admin) UpdatePasssword(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -618,10 +647,13 @@ func (this *Admin) UpdatePasssword(ctx *router.Context) {
         return
     }
 
+    // 授权数据
+    gadb := model.NewAuthGroupAccess()
+
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
         First(&result).
         Error
@@ -631,7 +663,7 @@ func (this *Admin) UpdatePasssword(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     password := post["password"].(string)
@@ -644,9 +676,9 @@ func (this *Admin) UpdatePasssword(ctx *router.Context) {
     pass, encrypt := authPassword.MakePassword(password)
 
     err3 := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "password": pass,
             "password_salt": encrypt,
         }).
@@ -659,8 +691,8 @@ func (this *Admin) UpdatePasssword(ctx *router.Context) {
     this.Success(ctx, "密码修改成功")
 }
 
-// 启用
-// @Summary 启用
+// 账号启用
+// @Summary 账号启用
 // @Description 管理员账号启用
 // @Tags 管理员
 // @Accept application/json
@@ -669,6 +701,7 @@ func (this *Admin) UpdatePasssword(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "...", "data": ""}"
 // @Router /admin/{id}/enable [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.enable"}
 func (this *Admin) Enable(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -682,10 +715,13 @@ func (this *Admin) Enable(ctx *router.Context) {
         return
     }
 
+    // 授权数据
+    gadb := model.NewAuthGroupAccess()
+
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
         First(&result).
         Error
@@ -695,7 +731,7 @@ func (this *Admin) Enable(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     if result["status"] == 1 {
@@ -704,9 +740,9 @@ func (this *Admin) Enable(ctx *router.Context) {
     }
 
     err2 := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "status": 1,
         }).
         Error
@@ -718,8 +754,8 @@ func (this *Admin) Enable(ctx *router.Context) {
     this.Success(ctx, "启用账号成功")
 }
 
-// 禁用
-// @Summary 禁用
+// 账号禁用
+// @Summary 账号禁用
 // @Description 管理员账号禁用
 // @Tags 管理员
 // @Accept application/json
@@ -728,6 +764,7 @@ func (this *Admin) Enable(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "...", "data": ""}"
 // @Router /admin/{id}/disable [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.disable"}
 func (this *Admin) Disable(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -741,10 +778,13 @@ func (this *Admin) Disable(ctx *router.Context) {
         return
     }
 
+    // 授权数据
+    gadb := model.NewAuthGroupAccess()
+
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
         First(&result).
         Error
@@ -754,7 +794,7 @@ func (this *Admin) Disable(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     if result["status"] == 0 {
@@ -763,9 +803,9 @@ func (this *Admin) Disable(ctx *router.Context) {
     }
 
     err2 := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "status": 0,
         }).
         Error
@@ -787,6 +827,7 @@ func (this *Admin) Disable(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "...", "data": ""}"
 // @Router /admin/logout/{refreshToken} [delete]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.logout"}
 func (this *Admin) Logout(ctx *router.Context) {
     refreshToken := ctx.Param("refreshToken")
     if refreshToken == "" {
@@ -830,7 +871,7 @@ func (this *Admin) Logout(ctx *router.Context) {
 
     model.NewAdmin().
         Where("id = ?", refreshAdminid).
-        Updates(map[string]interface{}{
+        Updates(map[string]any{
             "refresh_time": int(datebin.NowTime()),
             "refresh_ip": router.GetRequestIp(ctx),
         })
@@ -849,6 +890,7 @@ func (this *Admin) Logout(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "...", "data": ""}"
 // @Router /admin/{id}/access [patch]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.access"}
 func (this *Admin) Access(ctx *router.Context) {
     id := ctx.Param("id")
     if id == "" {
@@ -862,10 +904,13 @@ func (this *Admin) Access(ctx *router.Context) {
         return
     }
 
+    // 授权数据
+    gadb := model.NewAuthGroupAccess()
+
     // 查询
-    result := map[string]interface{}{}
+    result := map[string]any{}
     err := model.NewAdmin().
-        Scopes(scope.AdminWithAccess(ctx)).
+        Scopes(scope.AdminWithAccess(ctx, gadb)).
         Where("id = ?", id).
         First(&result).
         Error
@@ -885,7 +930,7 @@ func (this *Admin) Access(ctx *router.Context) {
     }
 
     // 接收数据
-    post := make(map[string]interface{})
+    post := make(map[string]any)
     ctx.BindJSON(&post)
 
     access := post["access"].(string)
@@ -913,6 +958,10 @@ func (this *Admin) Access(ctx *router.Context) {
 
         insertData := make([]model.AuthGroupAccess, 0)
         for _, value := range intersectAccess {
+            if value == "" {
+                continue
+            }
+
             insertData = append(insertData, model.AuthGroupAccess{
                 AdminId: id,
                 GroupId: value,
@@ -934,6 +983,7 @@ func (this *Admin) Access(ctx *router.Context) {
 // @Success 200 {string} json "{"success": true, "code": 0, "message": "...", "data": ""}"
 // @Router /admin/reset-permission [put]
 // @Security Bearer
+// @x-lakego {"slug": "lakego-admin.admin.reset-permission", "sort": "200"}
 func (this *Admin) ResetPermission(ctx *router.Context) {
     // 清空原始数据
     model.ClearRulesData()
@@ -964,22 +1014,19 @@ func (this *Admin) ResetPermission(ctx *router.Context) {
 
     groupListMap := model.FormatStructToArrayMap(groupList)
 
-    // permission
-    cas := permission.New()
-
     // 添加权限
     if len(ruleListMap) > 0 {
         for _, rv := range ruleListMap {
-            rule := rv["Rule"].(map[string]interface{})
+            rule := rv["Rule"].(map[string]any)
 
-            cas.AddPolicy(rv["group_id"].(string), rule["url"].(string), rule["method"].(string))
+            permission.New().AddPolicy(rv["group_id"].(string), rule["url"].(string), rule["method"].(string))
         }
     }
 
     // 添加权限
     if len(groupListMap) > 0 {
         for _, gv := range groupListMap {
-            cas.AddRoleForUser(gv["admin_id"].(string), gv["group_id"].(string))
+            permission.New().AddRoleForUser(gv["admin_id"].(string), gv["group_id"].(string))
         }
     }
 

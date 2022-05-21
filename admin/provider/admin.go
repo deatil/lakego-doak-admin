@@ -9,7 +9,6 @@ import (
     "github.com/deatil/lakego-doak/lakego/provider"
     "github.com/deatil/lakego-doak/lakego/facade/config"
     pathTool "github.com/deatil/lakego-doak/lakego/path"
-    routerFacade "github.com/deatil/lakego-doak/lakego/facade/router"
 
     "github.com/deatil/lakego-doak-admin/admin/support/url"
     "github.com/deatil/lakego-doak-admin/admin/support/response"
@@ -70,12 +69,12 @@ var middlewareGroups = map[string][]string{
  * @create 2021-9-11
  * @author deatil
  */
-type AdminServiceProvider struct {
+type Admin struct {
     provider.ServiceProvider
 }
 
 // 引导
-func (this *AdminServiceProvider) Boot() {
+func (this *Admin) Boot() {
     // 脚本
     this.loadCommand()
 
@@ -92,7 +91,7 @@ func (this *AdminServiceProvider) Boot() {
 /**
  * 导入脚本
  */
-func (this *AdminServiceProvider) loadCommand() {
+func (this *Admin) loadCommand() {
     // 安装
     this.AddCommand(cmd.InstallCmd)
 
@@ -121,7 +120,7 @@ func (this *AdminServiceProvider) loadCommand() {
 /**
  * 导入路由
  */
-func (this *AdminServiceProvider) loadRoute() {
+func (this *Admin) loadRoute() {
     this.AddRoute(func(engine *router.Engine) {
         // 中间件
         this.loadMiddleware()
@@ -148,7 +147,7 @@ func (this *AdminServiceProvider) loadRoute() {
         engine.Use(globalMiddlewares...)
 
         // 中间件
-        groupMiddlewares := routerFacade.GetMiddlewares(conf.GetString("Route.Middleware"))
+        groupMiddlewares := router.GetMiddlewares(conf.GetString("Route.Middleware"))
 
         // 路由
         admin := engine.Group(conf.GetString("Route.Prefix"))
@@ -159,7 +158,7 @@ func (this *AdminServiceProvider) loadRoute() {
                 adminRoute.Route(admin)
 
                 // 管理员中间件
-                adminGroupMiddlewares := routerFacade.GetMiddlewares(conf.GetString("route.admin-middleware"))
+                adminGroupMiddlewares := router.GetMiddlewares(conf.GetString("route.admin-middleware"))
 
                 // 需要管理员权限
                 admin.Use(adminGroupMiddlewares...)
@@ -175,8 +174,8 @@ func (this *AdminServiceProvider) loadRoute() {
 /**
  * 导入中间件
  */
-func (this *AdminServiceProvider) loadMiddleware() {
-    m := routerFacade.NewMiddleware()
+func (this *Admin) loadMiddleware() {
+    m := router.NewMiddleware()
 
     // 导入中间件
     for name, value := range routeMiddlewares {
@@ -194,7 +193,7 @@ func (this *AdminServiceProvider) loadMiddleware() {
 /**
  * 推送配置
  */
-func (this *AdminServiceProvider) publishConfig() {
+func (this *Admin) publishConfig() {
     // 配置
     path := pathTool.FormatPath("{root}/pkg/lakego-app/doak-admin/resources/config/admin.yml")
 
@@ -209,7 +208,7 @@ func (this *AdminServiceProvider) publishConfig() {
 /**
  * 记录 pid 信息
  */
-func (this *AdminServiceProvider) putSock() {
+func (this *Admin) putSock() {
     pidPath := config.New("admin").GetString("pid-path")
 
     file := pathTool.FormatPath(pidPath)

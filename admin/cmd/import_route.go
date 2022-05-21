@@ -55,7 +55,7 @@ func ImportRoute() {
 
         v.Path = strings.TrimPrefix(v.Path, "/" + group)
 
-        result := map[string]interface{}{}
+        result := map[string]any{}
         err := model.NewAuthRule().
             Where("url = ?", v.Path).
             First(&result).
@@ -78,9 +78,9 @@ func ImportRoute() {
         } else {
             model.NewAuthRule().
                 Where("url = ?", v.Path).
-                Updates(map[string]interface{}{
-                    "url": v.Path,
-                    "method": strings.ToUpper(v.Method),
+                Where("method = ?", strings.ToUpper(v.Method)).
+                Updates(map[string]any{
+                    "title": v.Path,
                 })
         }
 
