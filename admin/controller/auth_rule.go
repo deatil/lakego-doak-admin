@@ -151,11 +151,12 @@ func (this *AuthRule) IndexTree(ctx *router.Context) {
         return
     }
 
-    newTree := tree.New()
-    list2 := newTree.WithData(list).Build("0", "", 1)
+    newList := tree.New().
+        WithData(list).
+        Build("0", "", 1)
 
     this.SuccessWithData(ctx, "获取成功", router.H{
-        "list": list2,
+        "list": newList,
     })
 }
 
@@ -249,7 +250,7 @@ func (this *AuthRule) Detail(ctx *router.Context) {
 func (this *AuthRule) Create(ctx *router.Context) {
     // 接收数据
     post := make(map[string]any)
-    ctx.BindJSON(&post)
+    this.ShouldBindJSON(ctx, &post)
 
     validateErr := authRuleValidate.Create(post)
     if validateErr != "" {
@@ -339,7 +340,7 @@ func (this *AuthRule) Update(ctx *router.Context) {
 
     // 接收数据
     post := make(map[string]any)
-    ctx.BindJSON(&post)
+    this.ShouldBindJSON(ctx, &post)
 
     validateErr := authRuleValidate.Update(post)
     if validateErr != "" {
@@ -468,7 +469,7 @@ func (this *AuthRule) Listorder(ctx *router.Context) {
 
     // 接收数据
     post := make(map[string]any)
-    ctx.BindJSON(&post)
+    this.ShouldBindJSON(ctx, &post)
 
     // 排序
     listorder := 0
@@ -523,7 +524,7 @@ func (this *AuthRule) Enable(ctx *router.Context) {
 
     // 接收数据
     post := make(map[string]any)
-    ctx.BindJSON(&post)
+    this.ShouldBindJSON(ctx, &post)
 
     if result["status"] == 1 {
         this.Error(ctx, "信息已启用")
@@ -575,7 +576,7 @@ func (this *AuthRule) Disable(ctx *router.Context) {
 
     // 接收数据
     post := make(map[string]any)
-    ctx.BindJSON(&post)
+    this.ShouldBindJSON(ctx, &post)
 
     if result["status"] == 0 {
         this.Error(ctx, "信息已禁用")
@@ -610,7 +611,7 @@ func (this *AuthRule) Disable(ctx *router.Context) {
 func (this *AuthRule) Clear(ctx *router.Context) {
     // 接收数据
     post := make(map[string]any)
-    ctx.BindJSON(&post)
+    this.ShouldBindJSON(ctx, &post)
 
     if post["ids"] == "" {
         this.Error(ctx, "权限ID列表不能为空")

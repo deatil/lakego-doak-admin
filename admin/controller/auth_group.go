@@ -144,11 +144,12 @@ func (this *AuthGroup) IndexTree(ctx *router.Context) {
         return
     }
 
-    newTree := tree.New()
-    list2 := newTree.WithData(list).Build("0", "", 1)
+    newList := tree.New().
+        WithData(list).
+        Build("0", "", 1)
 
     this.SuccessWithData(ctx, "获取成功", router.H{
-        "list": list2,
+        "list": newList,
     })
 }
 
@@ -269,7 +270,7 @@ func (this *AuthGroup) Detail(ctx *router.Context) {
 func (this *AuthGroup) Create(ctx *router.Context) {
     // 接收数据
     post := make(map[string]any)
-    ctx.BindJSON(&post)
+    this.ShouldBindJSON(ctx, &post)
 
     validateErr := authGroupValidate.Create(post)
     if validateErr != "" {
@@ -345,7 +346,7 @@ func (this *AuthGroup) Update(ctx *router.Context) {
 
     // 接收数据
     post := make(map[string]any)
-    ctx.BindJSON(&post)
+    this.ShouldBindJSON(ctx, &post)
 
     validateErr := authGroupValidate.Update(post)
     if validateErr != "" {
@@ -468,7 +469,7 @@ func (this *AuthGroup) Listorder(ctx *router.Context) {
 
     // 接收数据
     post := make(map[string]any)
-    ctx.BindJSON(&post)
+    this.ShouldBindJSON(ctx, &post)
 
     // 排序
     listorder := 0
@@ -523,7 +524,7 @@ func (this *AuthGroup) Enable(ctx *router.Context) {
 
     // 接收数据
     post := make(map[string]any)
-    ctx.BindJSON(&post)
+    this.ShouldBindJSON(ctx, &post)
 
     if result["status"] == 1 {
         this.Error(ctx, "信息已启用")
@@ -575,7 +576,7 @@ func (this *AuthGroup) Disable(ctx *router.Context) {
 
     // 接收数据
     post := make(map[string]any)
-    ctx.BindJSON(&post)
+    this.ShouldBindJSON(ctx, &post)
 
     if result["status"] == 0 {
         this.Error(ctx, "信息已禁用")
@@ -638,7 +639,7 @@ func (this *AuthGroup) Access(ctx *router.Context) {
 
     // 接收数据
     post := make(map[string]any)
-    ctx.BindJSON(&post)
+    this.ShouldBindJSON(ctx, &post)
 
     // 添加权限
     access := post["access"].(string)
