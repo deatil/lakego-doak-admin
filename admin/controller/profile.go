@@ -1,7 +1,8 @@
 package controller
 
 import (
-    "github.com/deatil/lakego-doak/lakego/event"
+    "github.com/deatil/go-event/event"
+    
     "github.com/deatil/lakego-doak/lakego/router"
     authPassword "github.com/deatil/lakego-doak/lakego/auth/password"
 
@@ -90,7 +91,7 @@ func (this *Profile) Update(ctx *router.Context) {
     }
 
     // 事件
-    event.ContextDispatch(ctx, "ProfileUpdateAfter", adminid)
+    event.Dispatch("profile.update-after", adminid)
 
     this.Success(ctx, "修改信息成功")
 }
@@ -139,7 +140,7 @@ func (this *Profile) UpdateAvatar(ctx *router.Context) {
     }
 
     // 事件
-    event.ContextDispatch(ctx, "ProfileUpdateAvatarAfter", adminid)
+    event.Dispatch("profile.update-avatar-after", adminid)
 
     this.Success(ctx, "修改头像成功")
 }
@@ -214,7 +215,7 @@ func (this *Profile) UpdatePasssword(ctx *router.Context) {
     }
 
     // 事件
-    event.ContextDispatch(ctx, "ProfileUpdatePassswordAfter", adminid)
+    event.Dispatch("profile.update-passsword-after", adminid)
 
     this.Success(ctx, "密码修改成功")
 }
