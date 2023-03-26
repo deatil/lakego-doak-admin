@@ -5,24 +5,23 @@ import (
     "encoding/json"
 
     "github.com/deatil/go-goch/goch"
-    "github.com/deatil/go-hash/hash"
     "github.com/deatil/go-tree/tree"
     "github.com/deatil/go-datebin/datebin"
 
     "github.com/deatil/lakego-doak/lakego/router"
     "github.com/deatil/lakego-doak/lakego/collection"
-    "github.com/deatil/lakego-doak/lakego/facade/auth"
     "github.com/deatil/lakego-doak/lakego/facade/config"
     "github.com/deatil/lakego-doak/lakego/facade/cache"
 
     "github.com/deatil/lakego-doak-admin/admin/model"
     "github.com/deatil/lakego-doak-admin/admin/model/scope"
-    "github.com/deatil/lakego-doak-admin/admin/auth/admin"
-    "github.com/deatil/lakego-doak-admin/admin/support/jwt"
     "github.com/deatil/lakego-doak-admin/admin/permission"
-    authPassword "github.com/deatil/lakego-doak/lakego/auth/password"
-    adminValidate "github.com/deatil/lakego-doak-admin/admin/validate/admin"
-    adminRepository "github.com/deatil/lakego-doak-admin/admin/repository/admin"
+    "github.com/deatil/lakego-doak-admin/admin/auth/auth"
+    "github.com/deatil/lakego-doak-admin/admin/auth/admin"
+    "github.com/deatil/lakego-doak-admin/admin/support/utils"
+    auth_password "github.com/deatil/lakego-doak-admin/admin/password"
+    admin_validate "github.com/deatil/lakego-doak-admin/admin/validate/admin"
+    admin_repository "github.com/deatil/lakego-doak-admin/admin/repository/admin"
 )
 
 /**
@@ -263,7 +262,7 @@ func (this *Admin) Rules(ctx *router.Context) {
         Pluck("id").
         ToStringArray()
 
-    rules := adminRepository.GetRules(groupids)
+    rules := admin_repository.GetRules(groupids)
 
     this.SuccessWithData(ctx, "获取成功", router.H{
         "list": rules,
@@ -350,7 +349,7 @@ func (this *Admin) Create(ctx *router.Context) {
     post := make(map[string]any)
     this.ShouldBindJSON(ctx, &post)
 
-    validateErr := adminValidate.Create(post)
+    validateErr := admin_validate.Create(post)
     if validateErr != "" {
         this.Error(ctx, validateErr)
         return
@@ -449,7 +448,7 @@ func (this *Admin) Update(ctx *router.Context) {
     post := make(map[string]any)
     this.ShouldBindJSON(ctx, &post)
 
-    validateErr := adminValidate.Update(post)
+    validateErr := admin_validate.Update(post)
     if validateErr != "" {
         this.Error(ctx, validateErr)
         return
@@ -601,7 +600,7 @@ func (this *Admin) UpdateAvatar(ctx *router.Context) {
     post := make(map[string]any)
     this.ShouldBindJSON(ctx, &post)
 
-    validateErr := adminValidate.UpdateAvatar(post)
+    validateErr := admin_validate.UpdateAvatar(post)
     if validateErr != "" {
         this.Error(ctx, validateErr)
         return
@@ -673,7 +672,7 @@ func (this *Admin) UpdatePasssword(ctx *router.Context) {
     }
 
     // 生成密码
-    pass, encrypt := authPassword.MakePassword(password)
+    pass, encrypt := auth_password.MakePassword(password)
 
     err3 := model.NewAdmin().
         Scopes(scope.AdminWithAccess(ctx, gadb)).
@@ -837,13 +836,13 @@ func (this *Admin) Logout(ctx *router.Context) {
 
     c := cache.New()
 
-    if c.Has(hash.MD5(refreshToken)) {
+    if c.Has(utils.MD5(refreshToken)) {
         this.Error(ctx, "refreshToken已失效")
         return
     }
 
     // jwt
-    aud := jwt.GetJwtAud(ctx)
+    aud := auth.GetJwtAud(ctx)
     jwter := auth.NewWithAud(aud)
 
     // 拿取数据
@@ -867,7 +866,7 @@ func (this *Admin) Logout(ctx *router.Context) {
         return
     }
 
-    c.Put(hash.MD5(refreshToken), "no", int64(refreshTokenExpiresIn))
+    c.Put(utils.MD5(refreshToken), "no", int64(refreshTokenExpiresIn))
 
     model.NewAdmin().
         Where("id = ?", refreshAdminid).

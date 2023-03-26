@@ -1,21 +1,20 @@
 package controller
 
 import (
-    "github.com/deatil/go-hash/hash"
     "github.com/deatil/go-datebin/datebin"
 
     "github.com/deatil/lakego-doak/lakego/router"
-    "github.com/deatil/lakego-doak/lakego/facade/auth"
     "github.com/deatil/lakego-doak/lakego/facade/config"
     "github.com/deatil/lakego-doak/lakego/facade/captcha"
     "github.com/deatil/lakego-doak/lakego/facade/cache"
     "github.com/deatil/lakego-doak/lakego/facade/logger"
 
     "github.com/deatil/lakego-doak-admin/admin/model"
-    "github.com/deatil/lakego-doak-admin/admin/support/jwt"
+    "github.com/deatil/lakego-doak-admin/admin/auth/auth"
+    "github.com/deatil/lakego-doak-admin/admin/support/utils"
     "github.com/deatil/lakego-doak-admin/admin/support/http/code"
-    authPassword "github.com/deatil/lakego-doak/lakego/auth/password"
-    passportValidate "github.com/deatil/lakego-doak-admin/admin/validate/passport"
+    auth_password "github.com/deatil/lakego-doak-admin/admin/password"
+    passport_validate "github.com/deatil/lakego-doak-admin/admin/validate/passport"
 )
 
 /**
@@ -71,7 +70,7 @@ func (this *Passport) Login(ctx *router.Context) {
     post := make(map[string]any)
     this.ShouldBindJSON(ctx, &post)
 
-    validateErr := passportValidate.Login(post)
+    validateErr := passport_validate.Login(post)
     if validateErr != "" {
         this.Error(ctx, validateErr, code.LoginError)
         return
@@ -103,14 +102,14 @@ func (this *Passport) Login(ctx *router.Context) {
     }
 
     // 验证密码
-    checkStatus := authPassword.CheckPassword(admin["password"].(string), password, admin["password_salt"].(string))
+    checkStatus := auth_password.CheckPassword(admin["password"].(string), password, admin["password_salt"].(string))
     if !checkStatus {
         this.Error(ctx, "账号或者密码错误", code.LoginError)
         return
     }
 
     // 生成 token
-    aud := jwt.GetJwtAud(ctx)
+    aud := auth.GetJwtAud(ctx)
     jwter := auth.NewWithAud(aud)
 
     // 账号ID
@@ -182,7 +181,7 @@ func (this *Passport) RefreshToken(ctx *router.Context) {
     }
 
     c := cache.New()
-    refreshTokenPutTime, _ := c.Get(hash.MD5(refreshToken.(string)))
+    refreshTokenPutTime, _ := c.Get(utils.MD5(refreshToken.(string)))
     refreshTokenPutTime = refreshTokenPutTime.(string)
     if refreshTokenPutTime != "" {
         this.Error(ctx, "refreshToken已失效", code.JwtRefreshTokenFail)
@@ -190,7 +189,7 @@ func (this *Passport) RefreshToken(ctx *router.Context) {
     }
 
     // jwt
-    aud := jwt.GetJwtAud(ctx)
+    aud := auth.GetJwtAud(ctx)
     jwter := auth.NewWithAud(aud)
 
     // 拿取数据
@@ -250,7 +249,7 @@ func (this *Passport) Logout(ctx *router.Context) {
     }
 
     c := cache.New()
-    refreshTokenPutString, _ := c.Get(hash.MD5(refreshToken.(string)))
+    refreshTokenPutString, _ := c.Get(utils.MD5(refreshToken.(string)))
     refreshTokenPutString = refreshTokenPutString.(string)
     if refreshTokenPutString != "" {
         this.Error(ctx, "refreshToken 已失效", code.JwtRefreshTokenFail)
@@ -258,7 +257,7 @@ func (this *Passport) Logout(ctx *router.Context) {
     }
 
     // jwt
-    aud := jwt.GetJwtAud(ctx)
+    aud := auth.GetJwtAud(ctx)
     jwter := auth.NewWithAud(aud)
 
     // 拿取数据
@@ -286,8 +285,8 @@ func (this *Passport) Logout(ctx *router.Context) {
     accessToken, _ := ctx.Get("access_token")
 
     // 加入黑名单
-    c.Put(hash.MD5(accessToken.(string)), "no", int64(refreshTokenExpiresIn))
-    c.Put(hash.MD5(refreshToken.(string)), "no", int64(refreshTokenExpiresIn))
+    c.Put(utils.MD5(accessToken.(string)), "no", int64(refreshTokenExpiresIn))
+    c.Put(utils.MD5(refreshToken.(string)), "no", int64(refreshTokenExpiresIn))
 
     // 数据输出
     this.Success(ctx, "退出成功")

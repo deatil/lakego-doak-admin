@@ -4,7 +4,6 @@ import (
     "fmt"
     "strings"
 
-    "github.com/deatil/go-hash/hash"
     "github.com/deatil/go-datebin/datebin"
     "github.com/deatil/go-encoding/encoding"
     "github.com/deatil/lakego-filesystem/filesystem"
@@ -14,6 +13,7 @@ import (
     "github.com/deatil/lakego-doak/lakego/command"
 
     "github.com/deatil/lakego-doak-admin/admin/model"
+    "github.com/deatil/lakego-doak-admin/admin/support/utils"
 )
 
 /**
@@ -54,7 +54,8 @@ func ImportApiRoute() {
     var routes map[string]any
 
     // 转换为 map
-    err = encoding.Unmarshal([]byte(swaggerInfo), &routes)
+    err = encoding.FromString(swaggerInfo).
+        JSONIteratorDecode(&routes).Error
     if err != nil {
         fmt.Println("api 信息错误")
         return
@@ -75,16 +76,18 @@ func ImportApiRoute() {
             url := k
             method := strings.ToUpper(kk)
 
-            data := vv.(map[string]any)
-            title := data["summary"].(string)
+            data := array.ArrayFrom(vv)
 
-            slug := array.ArrGetWithGoch(data, "x-lakego.slug").ToString()
+            title := data.Value("summary").ToString()
+            description := data.Value("description").ToString()
+
+            slug := data.Value("x-lakego.slug").ToString()
             if slug == "" {
-                slug = hash.MD5(datebin.NowDatetimeString() + random.String(15))
+                slug = utils.MD5(datebin.NowDatetimeString() + random.String(15))
             }
 
             // 排序
-            sort := array.ArrGetWithGoch(data, "x-lakego.sort", "100").ToString()
+            sort := data.Value("x-lakego.sort", "100").ToString()
 
             err := model.NewAuthRule().
                 Where("url = ?", url).
@@ -92,7 +95,7 @@ func ImportApiRoute() {
                 First(&result).
                 Error
             if err != nil || len(result) < 1 {
-                tags := array.ArrGetWithGoch(data, "tags").ToStringSlice()
+                tags := data.Value("tags").ToStringSlice()
 
                 tag := ""
                 if len(tags) > 0 {
@@ -137,7 +140,7 @@ func ImportApiRoute() {
                     Url: url,
                     Method: method,
                     Slug: slug,
-                    Description: "",
+                    Description: description,
                     Listorder: sort,
                     Status: 1,
                     AddTime: int(datebin.NowTime()),
@@ -151,6 +154,7 @@ func ImportApiRoute() {
                     Where("method = ?", method).
                     Updates(map[string]any{
                         "title": title,
+                        "description": description,
                         "slug": slug,
                         "listorder": sort,
                     })
