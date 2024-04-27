@@ -87,7 +87,7 @@ func ImportApiRoute() {
             }
 
             // 排序
-            sort := data.Value("x-lakego.sort", "100").ToString()
+            sort := data.Value("x-lakego.sort", "100").ToInt()
 
             err := model.NewAuthRule().
                 Where("url = ?", url).
@@ -118,9 +118,9 @@ func ImportApiRoute() {
                             Method: "OPTIONS",
                             Slug: "#",
                             Description: "",
-                            Listorder: "100",
+                            Listorder: 100,
                             Status: 1,
-                            AddTime: int(datebin.NowTime()),
+                            AddTime: int(datebin.NowTimestamp()),
                             AddIp: "127.0.0.1",
                         }
 
@@ -143,7 +143,7 @@ func ImportApiRoute() {
                     Description: description,
                     Listorder: sort,
                     Status: 1,
-                    AddTime: int(datebin.NowTime()),
+                    AddTime: int(datebin.NowTimestamp()),
                     AddIp: "127.0.0.1",
                 }
 

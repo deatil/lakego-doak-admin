@@ -68,9 +68,9 @@ func ImportRoute() {
                 Method: strings.ToUpper(v.Method),
                 Slug: v.Path,
                 Description: "",
-                Listorder: "100",
+                Listorder: 100,
                 Status: 1,
-                AddTime: int(datebin.NowTime()),
+                AddTime: int(datebin.NowTimestamp()),
                 AddIp: "127.0.0.1",
             }
 
